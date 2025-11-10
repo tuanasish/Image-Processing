@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Results
+results/
+*.jpg
+*.png
+*.jpeg
+*.bmp
+
+# Data
+data/test_images/*
+data/training/*
+!data/test_images/.gitkeep
+!data/training/.gitkeep
+
+# Models (giữ lại file model nhưng ignore nếu quá lớn)
+# models/*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Uploads
+web/uploads/*
+!web/uploads/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp

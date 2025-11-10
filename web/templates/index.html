@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhận dạng Biển số Xe Việt Nam</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Nhận dạng Biển số Xe</h1>
+                <p class="subtitle">Hệ thống nhận dạng biển số tự động sử dụng AI</p>
+            </div>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <div class="upload-content" id="uploadContent">
+                        <div class="upload-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <p class="upload-text">Kéo thả ảnh vào đây hoặc <span class="link">chọn file</span></p>
+                        <p class="hint">Hỗ trợ: JPG, PNG, JPEG (tối đa 16MB)</p>
+                    </div>
+                </div>
+                <button id="processBtn" class="btn btn-primary" disabled>
+                    <span id="btnText">Nhận dạng Biển số</span>
+                    <span id="btnLoader" class="loader" style="display: none;"></span>
+                </button>
+            </div>
+
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h2>Kết quả nhận dạng</h2>
+                        <span id="plateCount" class="badge">0 biển số</span>
+                    </div>
+                    <div class="result-content">
+                        <div class="plate-text" id="resultText"></div>
+                    </div>
+                </div>
+
+                <div class="images-grid">
+                    <div class="image-card">
+                        <h3>Ảnh phát hiện</h3>
+                        <div class="image-wrapper">
+                            <img id="detectedImage" src="" alt="Detected regions">
+                        </div>
+                    </div>
+                    <div id="plateImagesContainer" class="plate-images"></div>
+                </div>
+            </div>
+
+            <div id="errorSection" class="error-card" style="display: none;">
+                <div class="error-icon">⚠</div>
+                <p id="errorText"></p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Hệ thống nhận dạng biển số xe sử dụng OpenCV và Machine Learning</p>
+        </footer>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadBox = document.getElementById('uploadBox');
+        const uploadContent = document.getElementById('uploadContent');
+        const processBtn = document.getElementById('processBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const resultText = document.getElementById('resultText');
+        const plateCount = document.getElementById('plateCount');
+        const detectedImage = document.getElementById('detectedImage');
+        const plateImagesContainer = document.getElementById('plateImagesContainer');
+        const errorText = document.getElementById('errorText');
+
+        let selectedFile = null;
+
+        uploadBox.addEventListener('click', () => fileInput.click());
+
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('drag-over');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('drag-over');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Vui lòng chọn file ảnh hợp lệ (JPG, PNG, JPEG)');
+                return;
+            }
+
+            selectedFile = file;
+            processBtn.disabled = false;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadContent.innerHTML = `
+                    <div class="preview-container">
+                        <img src="${e.target.result}" alt="Preview" class="preview-image">
+                        <div class="preview-info">
+                            <p class="file-name">${file.name}</p>
+                            <p class="hint">Click để chọn ảnh khác</p>
+                        </div>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            processBtn.disabled = true;
+            btnText.textContent = 'Đang xử lý...';
+            btnLoader.style.display = 'inline-block';
+            resultsSection.style.display = 'none';
+            errorSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/api/recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResults(data);
+                } else {
+                    showError(data.error || 'Có lỗi xảy ra khi xử lý ảnh');
+                }
+            } catch (error) {
+                showError('Lỗi kết nối: ' + error.message);
+            } finally {
+                processBtn.disabled = false;
+                btnText.textContent = 'Nhận dạng Biển số';
+                btnLoader.style.display = 'none';
+            }
+        });
+
+        function showResults(data) {
+            if (data.results && data.results.length > 0) {
+                resultText.innerHTML = data.results.map(result => 
+                    `<span class="plate-badge">${result}</span>`
+                ).join('');
+                plateCount.textContent = `${data.count} biển số`;
+            } else {
+                resultText.innerHTML = '<span class="plate-badge no-plate">Không phát hiện được biển số</span>';
+                plateCount.textContent = '0 biển số';
+            }
+
+            if (data.detected_image) {
+                detectedImage.src = 'data:image/jpeg;base64,' + data.detected_image;
+            }
+
+            plateImagesContainer.innerHTML = '';
+            if (data.plate_images && data.plate_images.length > 0) {
+                data.plate_images.forEach((plateImg, index) => {
+                    const plateDiv = document.createElement('div');
+                    plateDiv.className = 'plate-card';
+                    plateDiv.innerHTML = `
+                        <h4>Biển số ${index + 1}</h4>
+                        <div class="plate-text-small">${data.results[index] || 'N/A'}</div>
+                        <div class="image-wrapper">
+                            <img src="data:image/jpeg;base64,${plateImg}" alt="Plate ${index + 1}">
+                        </div>
+                    `;
+                    plateImagesContainer.appendChild(plateDiv);
+                });
+            }
+
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorSection.style.display = 'flex';
+            errorSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
