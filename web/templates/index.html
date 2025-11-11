@@ -40,7 +40,7 @@
             <div id="resultsSection" class="results-section" style="display: none;">
                 <div class="result-card">
                     <div class="result-header">
-                        <h2>Kết quả nhận dạng</h2>
+                        <h2>🎯 Kết quả nhận dạng</h2>
                         <span id="plateCount" class="badge">0 biển số</span>
                     </div>
                     <div class="result-content">
@@ -48,13 +48,97 @@
                     </div>
                 </div>
 
-                <div class="images-grid">
-                    <div class="image-card">
-                        <h3>Ảnh phát hiện</h3>
-                        <div class="image-wrapper">
-                            <img id="detectedImage" src="" alt="Detected regions">
+                <!-- Các bước xử lý ảnh -->
+                <div class="processing-steps-section">
+                    <h2 class="section-title">🔄 Các bước xử lý ảnh</h2>
+                    <p class="section-subtitle">Quá trình phát hiện và nhận dạng biển số qua từng bước</p>
+                    
+                    <div class="steps-timeline">
+                        <!-- Bước 1: Ảnh gốc -->
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <h3>Ảnh gốc</h3>
+                            <p class="step-desc">Ảnh đầu vào sau khi resize về kích thước chuẩn</p>
+                            <div class="image-wrapper">
+                                <img id="stepOriginal" src="" alt="Ảnh gốc">
+                            </div>
+                        </div>
+
+                        <!-- Bước 2: Grayscale -->
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <h3>Chuyển đổi Grayscale</h3>
+                            <p class="step-desc">Chuyển sang HSV và trích xuất kênh Value (độ sáng)</p>
+                            <div class="image-wrapper">
+                                <img id="stepGrayscale" src="" alt="Grayscale">
+                            </div>
+                        </div>
+
+                        <!-- Bước 3: Tăng tương phản -->
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <h3>Tăng độ tương phản</h3>
+                            <p class="step-desc">Top Hat + Black Hat morphology</p>
+                            <div class="image-wrapper">
+                                <img id="stepContrast" src="" alt="Contrast">
+                            </div>
+                        </div>
+
+                        <!-- Bước 4: Làm mịn -->
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <h3>Làm mịn ảnh</h3>
+                            <p class="step-desc">Gaussian Blur để giảm nhiễu</p>
+                            <div class="image-wrapper">
+                                <img id="stepBlurred" src="" alt="Blurred">
+                            </div>
+                        </div>
+
+                        <!-- Bước 5: Nhị phân hóa -->
+                        <div class="step-card">
+                            <div class="step-number">5</div>
+                            <h3>Nhị phân hóa</h3>
+                            <p class="step-desc">Adaptive Threshold để tách nền và ký tự</p>
+                            <div class="image-wrapper">
+                                <img id="stepThreshold" src="" alt="Threshold">
+                            </div>
+                        </div>
+
+                        <!-- Bước 6: Phát hiện cạnh -->
+                        <div class="step-card">
+                            <div class="step-number">6</div>
+                            <h3>Phát hiện cạnh</h3>
+                            <p class="step-desc">Canny Edge Detection để tìm đường viền</p>
+                            <div class="image-wrapper">
+                                <img id="stepCanny" src="" alt="Canny">
+                            </div>
+                        </div>
+
+                        <!-- Bước 7: Dilation -->
+                        <div class="step-card">
+                            <div class="step-number">7</div>
+                            <h3>Dilation</h3>
+                            <p class="step-desc">Nối các cạnh bị đứt đoạn</p>
+                            <div class="image-wrapper">
+                                <img id="stepDilated" src="" alt="Dilated">
+                            </div>
+                        </div>
+
+                        <!-- Bước 8: Phát hiện contour -->
+                        <div class="step-card highlight">
+                            <div class="step-number">8</div>
+                            <h3>Phát hiện biển số</h3>
+                            <p class="step-desc">Tìm và khoanh vùng biển số (tứ giác)</p>
+                            <div class="image-wrapper">
+                                <img id="stepContours" src="" alt="Contours">
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Biển số đã cắt -->
+                <div class="detected-plates-section">
+                    <h2 class="section-title">🚗 Biển số đã nhận dạng</h2>
                     <div id="plateImagesContainer" class="plate-images"></div>
                 </div>
             </div>
@@ -181,10 +265,37 @@
                 plateCount.textContent = '0 biển số';
             }
 
-            if (data.detected_image) {
-                detectedImage.src = 'data:image/jpeg;base64,' + data.detected_image;
+            // Hiển thị các bước xử lý ảnh
+            if (data.processing_steps) {
+                const steps = data.processing_steps;
+                
+                if (steps.original) {
+                    document.getElementById('stepOriginal').src = 'data:image/jpeg;base64,' + steps.original;
+                }
+                if (steps.grayscale) {
+                    document.getElementById('stepGrayscale').src = 'data:image/jpeg;base64,' + steps.grayscale;
+                }
+                if (steps.contrast) {
+                    document.getElementById('stepContrast').src = 'data:image/jpeg;base64,' + steps.contrast;
+                }
+                if (steps.blurred) {
+                    document.getElementById('stepBlurred').src = 'data:image/jpeg;base64,' + steps.blurred;
+                }
+                if (steps.threshold) {
+                    document.getElementById('stepThreshold').src = 'data:image/jpeg;base64,' + steps.threshold;
+                }
+                if (steps.canny) {
+                    document.getElementById('stepCanny').src = 'data:image/jpeg;base64,' + steps.canny;
+                }
+                if (steps.dilated) {
+                    document.getElementById('stepDilated').src = 'data:image/jpeg;base64,' + steps.dilated;
+                }
+                if (steps.contours) {
+                    document.getElementById('stepContours').src = 'data:image/jpeg;base64,' + steps.contours;
+                }
             }
 
+            // Hiển thị biển số đã cắt và nhận dạng
             plateImagesContainer.innerHTML = '';
             if (data.plate_images && data.plate_images.length > 0) {
                 data.plate_images.forEach((plateImg, index) => {
